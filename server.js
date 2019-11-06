@@ -16,31 +16,56 @@ app.listen(PORT, () => console.log(`listening on PORT ${PORT}`));
 
 app.get('/location', locationHandler);
 app.get('/weather', weatherHandler);
-app.get('/events', eventBriteHandler);
+// app.get('/events', eventBriteHandler);
+app.get('/trails', trailsHandler);
 app.use('*', notFoundHandler);
 app.use(errorHandler);
 
-//EventBrite
+//Trails
 
-function eventBriteHandler(request, response){
-  const url = `https://www.eventbriteapi.com/v3/users/me/?token=${process.env.EVENTBRITE_API_KEY}`
+function trailsHandler(request, response){
+  let trailsData = request.query.data;
+  const url = `https://www.hikingproject.com/data/get-trails?${request.query.data.latitude},${request.query.data.longitude}&maxDistance=10&key=${process.env.TRAIL_API_KEY}`;
 
   superagent.get(url)
-  .set({'Authorization': `Bearer: ${process.env.EVENTBRITE_API_KEY}`})
-    .then( eventData => {
-      const eventSummaries = [];
-        eventData.body.daily.data.forEach( (day) => {
-          eventSummaries.push(new Event(day) )
+    .then( trailsData => {
+        const trailsSummaries = trailsData.data.map( day => {
+          return new Trails(day);
         });
-    
-      response.status(200).json(eventSummaries);
+        
+      response.status(200).json(trailsSummaries);
     })
     .catch(error => errorHandler(error, request, response));
 };
 
-function Event(data) {
-  this.name = data.name;
+function Trails(name, trailsData) {
+  this.search_query = name;
+  this.formatted_query = trailsData.results[0].formatted_address;
+  this.latitude = trailsData.results[0].geometry.trails.lat;
+  this.longitude = trailsData.results[0].geometry.trails.lng;
 };
+
+// //EventBrite
+
+// function eventBriteHandler(request, response){
+//   const url = `https://www.eventbriteapi.com/v3/users/me/?token=${process.env.EVENTBRITE_API_KEY}`
+
+//   superagent.get(url)
+//   .set({'Authorization': `Bearer: ${process.env.EVENTBRITE_API_KEY}`})
+//     .then( eventData => {
+//       const eventSummaries = [];
+//         eventData.body.daily.data.forEach( (day) => {
+//           eventSummaries.push(new Event(day) )
+//         });
+    
+//       response.status(200).json(eventSummaries);
+//     })
+//     .catch(error => errorHandler(error, request, response));
+// };
+
+// function Event(data) {
+//   this.name = data.name;
+// };
 
 //Location
 
